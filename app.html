@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Marmotte Rezepte</title>
+<link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" sizes="120x120" href="assets/apple-touch-icon-120.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="assets/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon-180.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f5f4f2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Rezepte">
+<link rel="stylesheet" href="https://bakerymarmotte-cmyk.github.io/marmotte-design/marmotte.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://bakerymarmotte-cmyk.github.io/marmotte-design/theme.js"></script>
+<script src="https://bakerymarmotte-cmyk.github.io/marmotte-design/icons.js" defer></script>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo"><i data-icon="croissant"></i></div>
+    <div>
+      <div class="brand-name">Marmotte</div>
+      <div class="brand-sub">Rezepte</div>
+    </div>
+  </div>
+  <div class="who">
+    <span class="name" id="user-name-label"></span>
+    <button class="m-theme-btn" data-theme-toggle aria-label="Hell/Dunkel umschalten"></button>
+    <button class="logout-btn" id="logout-btn" aria-label="Abmelden"><i data-icon="log-out" data-size="16"></i></button>
+  </div>
+</div>
+
+<div class="nav-wrap" id="nav-wrap">
+<nav class="main-nav" id="main-nav">
+  <button data-tab="zutaten" class="active"><span class="icon"><i data-icon="package"></i></span>Zutaten</button>
+  <button data-tab="lieferanten"><span class="icon"><i data-icon="shopping-cart"></i></span>Lieferanten</button>
+</nav>
+</div>
+
+<main>
+
+  <!-- ZUTATEN -->
+  <section class="tab-panel active" id="panel-zutaten">
+    <div class="search-box">
+      <i data-icon="search" data-size="16"></i>
+      <input type="search" id="z-suche" placeholder="Zutat suchen …" autocomplete="off">
+    </div>
+    <div class="filter-row">
+      <select id="z-filter-lieferant"><option value="">Alle Lieferanten</option></select>
+      <select id="z-filter-allergen"><option value="">Alle Allergene</option></select>
+    </div>
+    <div class="list-head">
+      <span class="hint-text" id="z-anzahl"></span>
+      <div class="list-checks">
+        <label class="check-inline admin-only"><input type="checkbox" id="z-inaktive"> Inaktive zeigen</label>
+      </div>
+    </div>
+    <button class="btn btn-primary admin-only add-btn-wide" id="z-neu" type="button"><i data-icon="plus" data-size="16"></i> Neue Zutat</button>
+    <div id="z-list"><p class="hint-text">Lädt …</p></div>
+  </section>
+
+  <!-- LIEFERANTEN -->
+  <section class="tab-panel" id="panel-lieferanten">
+    <div class="card form-card admin-only-block">
+      <h3 class="section-title" id="l-form-title">Neuer Lieferant</h3>
+      <div class="field"><label for="l-name">Name *</label><input type="text" id="l-name" maxlength="80" placeholder="z.B. Pistor AG"></div>
+      <div class="form-row-2">
+        <div class="field"><label for="l-kontakt">Kontaktperson</label><input type="text" id="l-kontakt" maxlength="80"></div>
+        <div class="field"><label for="l-telefon">Telefon</label><input type="tel" id="l-telefon" maxlength="40"></div>
+      </div>
+      <div class="field"><label for="l-email">E-Mail</label><input type="email" id="l-email" maxlength="120"></div>
+      <div class="field"><label for="l-notiz">Bemerkung</label><textarea id="l-notiz" rows="2" maxlength="500" placeholder="z.B. Kundennummer, Bestelltage"></textarea></div>
+      <div class="error-text" id="l-error"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="l-abbrechen" type="button" style="display:none;">Abbrechen</button>
+        <button class="btn btn-primary" id="l-speichern" type="button">Lieferant anlegen</button>
+      </div>
+    </div>
+    <div id="l-list"></div>
+  </section>
+
+</main>
+
+<!-- Modal: Zutat ansehen -->
+<div class="modal-backdrop" id="z-detail-modal">
+  <div class="modal-sheet">
+    <div id="z-detail-body"></div>
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="btn btn-secondary" id="z-detail-close" type="button">Schliessen</button>
+      <button class="btn btn-primary admin-only" id="z-detail-edit" type="button"><i data-icon="pencil" data-size="16"></i> Bearbeiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Zutat bearbeiten (Admin) -->
+<div class="modal-backdrop" id="z-edit-modal">
+  <div class="modal-sheet modal-wide">
+    <h3 id="z-edit-title">Neue Zutat</h3>
+
+    <div class="field"><label for="z-name">Name *</label><input type="text" id="z-name" maxlength="80" placeholder="z.B. Weizenmehl Typ 550"></div>
+    <div class="field">
+      <label for="z-deklaration">Deklaration (wie auf der Zutatenliste)</label>
+      <textarea id="z-deklaration" rows="2" maxlength="1000" placeholder="leer = gleich wie Name. z.B. Schokolade (Zucker, Kakaomasse, Kakaobutter, Emulgator: Sojalecithin)"></textarea>
+    </div>
+
+    <div class="form-row-2">
+      <div class="field">
+        <label for="z-lieferant">Lieferant</label>
+        <select id="z-lieferant"></select>
+      </div>
+      <div class="field"><label for="z-herkunft">Herkunft</label><input type="text" id="z-herkunft" maxlength="60" placeholder="z.B. Schweiz"></div>
+    </div>
+
+    <div class="field">
+      <label for="z-preis">Einkaufspreis (CHF)</label>
+      <div class="menge-row preis-row">
+        <input type="text" id="z-preis" inputmode="decimal" placeholder="leer = unbekannt">
+        <select id="z-preis-einheit">
+          <option value="kg">pro kg</option>
+          <option value="l">pro l</option>
+          <option value="Stk">pro Stk</option>
+        </select>
+      </div>
+      <span class="hint-text">Nur für dich als Admin sichtbar.</span>
+    </div>
+
+    <div class="field">
+      <label>Allergene</label>
+      <div class="allergen-grid" id="z-allergene"></div>
+    </div>
+    <div class="field">
+      <label>Nützliche Hinweise</label>
+      <div class="allergen-grid" id="z-hinweise"></div>
+    </div>
+
+    <div class="error-text" id="z-edit-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="z-edit-cancel" type="button">Abbrechen</button>
+      <button class="btn btn-primary" id="z-edit-save" type="button"><i data-icon="save" data-size="16"></i> Speichern</button>
+    </div>
+    <div class="edit-extra" id="z-edit-extra">
+      <button class="btn btn-secondary btn-small" id="z-edit-toggle" type="button"></button>
+      <button class="btn btn-danger btn-small" id="z-edit-delete" type="button"><i data-icon="trash-2" data-size="14"></i> Löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
