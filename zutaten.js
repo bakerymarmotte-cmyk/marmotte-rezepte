@@ -32,6 +32,12 @@ export function initZutaten(session) {
   const liefName = (z) => lieferanten.find((l) => l.id === z.lieferantId)?.name || "";
   const allergenListe = (z, stufe) => ALLERGENE.filter((x) => z.allergene?.[x.key] === stufe);
   const preisText = (id) => (preise[id]?.preis != null ? `${chf(preise[id].preis)} / ${preise[id].einheit}` : "");
+  // z.B. «Sack 25 kg à 31.50»
+  const gebindeText = (id) => {
+    const g = preise[id]?.gebinde;
+    if (!g) return "";
+    return `${g.name ? g.name + " " : ""}${String(g.menge).replace(".", ",")} ${g.einheit} à ${chf(g.preis)}`;
+  };
 
   // ---------- Liste ----------
   function gefiltert() {
@@ -92,7 +98,7 @@ export function initZutaten(session) {
       <div class="detail-grid">
         ${zeile("Lieferant", esc(l?.name || ""))}
         ${zeile("Herkunft", esc(z.herkunft || ""))}
-        ${isAdmin ? zeile("Einkaufspreis", preisText(z.id) ? `CHF ${preisText(z.id)}` : "–") : ""}
+        ${isAdmin ? zeile("Einkaufspreis", preisText(z.id) ? `CHF ${preisText(z.id)}${gebindeText(z.id) ? ` <span class="hint-text">(${esc(gebindeText(z.id))})</span>` : ""}` : "–") : ""}
       </div>
       <div class="detail-block">
         <div class="db-title">Deklaration</div>
@@ -135,6 +141,43 @@ export function initZutaten(session) {
   if (!isAdmin) return api;
 
   // ---------- Bearbeiten (nur Admin) ----------
+
+  // Einkaufspreis: direkt pro kg / l / Stk oder pro Gebinde (z.B. Sack 25 kg = CHF 31.50).
+  // Gespeichert wird immer der Preis pro Grundeinheit (preis, einheit) in Rappen, beim Gebinde zusätzlich die Angaben dazu.
+  const BASIS = { kg: ["kg", 1], g: ["kg", 0.001], l: ["l", 1], ml: ["l", 0.001], Stk: ["Stk", 1] };
+  let preisArt = "einheit";
+  function setzePreisArt(art) {
+    preisArt = art;
+    f("z-preis-art").querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.art === art));
+    f("z-preis-einheit-zeile").style.display = art === "einheit" ? "" : "none";
+    f("z-gebinde").style.display = art === "gebinde" ? "" : "none";
+    gebindeRechnen();
+  }
+  f("z-preis-art").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setzePreisArt(b.dataset.art); });
+  // Ergebnis: { leer } | { fehler } | { preis, einheit, gebinde }
+  function gebindeLesen() {
+    const mengeTxt = f("z-geb-menge").value.trim().replace(",", ".");
+    const preisTxt = f("z-geb-preis").value;
+    if (!mengeTxt && !preisTxt.trim()) return { leer: true };
+    const menge = Number(mengeTxt);
+    const gp = parseChf(preisTxt);
+    if (!(menge > 0)) return { fehler: "Bitte die Menge des Gebindes eingeben (Zahl grösser als 0)." };
+    if (gp === null || Number.isNaN(gp)) return { fehler: "Bitte den Preis des Gebindes eingeben." };
+    const [einheit, faktor] = BASIS[f("z-geb-einheit").value];
+    return {
+      preis: Math.round(gp / (menge * faktor)),
+      einheit,
+      gebinde: { name: f("z-geb-name").value.trim().slice(0, 30), menge, einheit: f("z-geb-einheit").value, preis: gp },
+    };
+  }
+  function gebindeRechnen() {
+    const out = f("z-geb-ergebnis");
+    if (preisArt !== "gebinde") { out.textContent = ""; return; }
+    const r = gebindeLesen();
+    out.textContent = r.leer ? "" : r.fehler ? "" : `= CHF ${chf(r.preis)} pro ${r.einheit}`;
+  }
+  ["z-geb-menge", "z-geb-preis"].forEach((id) => f(id).addEventListener("input", gebindeRechnen));
+  f("z-geb-einheit").addEventListener("change", gebindeRechnen);
   f("z-allergene").innerHTML = ALLERGENE.map((x) => `
     <div class="allergen-row" data-key="${x.key}">
       <span class="ar-label">${esc(x.label)}</span>
@@ -194,6 +237,12 @@ export function initZutaten(session) {
     f("z-herkunft").value = z?.herkunft || "";
     f("z-preis").value = z ? toInput(preise[z.id]?.preis) : "";
     f("z-preis-einheit").value = (z && preise[z.id]?.einheit) || "kg";
+    const g = z ? preise[z.id]?.gebinde : null;
+    f("z-geb-name").value = g?.name || "";
+    f("z-geb-menge").value = g ? String(g.menge) : "";
+    f("z-geb-einheit").value = g?.einheit || "kg";
+    f("z-geb-preis").value = g ? toInput(g.preis) : "";
+    setzePreisArt(g ? "gebinde" : "einheit");
     ALLERGENE.forEach((x) => setzeAllergen(x.key, z?.allergene?.[x.key]));
     HINWEISE.forEach((h) => setzeHinweis(h.key, z?.hinweise?.[h.key] === true));
     f("z-edit-extra").style.display = z ? "flex" : "none";
@@ -215,8 +264,17 @@ export function initZutaten(session) {
     if (zutaten.some((z) => z.name.toLowerCase() === name.toLowerCase() && z.id !== bearbeite?.id)) {
       err.textContent = "Es gibt bereits eine Zutat mit diesem Namen."; return;
     }
-    const preis = parseChf(f("z-preis").value);
-    if (Number.isNaN(preis)) { err.textContent = "«Einkaufspreis» ist keine gültige Zahl."; return; }
+    let preis, einheit, gebinde = null;
+    if (preisArt === "gebinde") {
+      const r = gebindeLesen();
+      if (r.fehler) { err.textContent = r.fehler; return; }
+      if (r.leer) { preis = null; einheit = "kg"; }
+      else ({ preis, einheit, gebinde } = r);
+    } else {
+      preis = parseChf(f("z-preis").value);
+      einheit = f("z-preis-einheit").value;
+      if (Number.isNaN(preis)) { err.textContent = "«Einkaufspreis» ist keine gültige Zahl."; return; }
+    }
 
     const allergene = {};
     f("z-allergene").querySelectorAll(".allergen-row").forEach((r) => { if (r.dataset.stufe) allergene[r.dataset.key] = r.dataset.stufe; });
@@ -244,10 +302,10 @@ export function initZutaten(session) {
 
       // Preis separat speichern (oder entfernen, wenn leer)
       const alt = preise[id];
-      const einheit = f("z-preis-einheit").value;
+      const gleichesGebinde = JSON.stringify(alt?.gebinde || null) === JSON.stringify(gebinde);
       if (preis === null) { if (alt) await deleteDoc(doc(db, "zutatenPreise", id)); }
-      else if (!alt || alt.preis !== preis || alt.einheit !== einheit) {
-        await setDoc(doc(db, "zutatenPreise", id), { preis, einheit, updatedAt: serverTimestamp(), updatedBy: wer });
+      else if (!alt || alt.preis !== preis || alt.einheit !== einheit || !gleichesGebinde) {
+        await setDoc(doc(db, "zutatenPreise", id), { preis, einheit, gebinde, updatedAt: serverTimestamp(), updatedBy: wer });
       }
       toast(bearbeite ? `«${name}» gespeichert` : `«${name}» angelegt`);
       closeModal("z-edit-modal");

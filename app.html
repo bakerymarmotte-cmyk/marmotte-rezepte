@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon-180.png">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f5f4f2">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Rezepte">
 <link rel="stylesheet" href="https://bakerymarmotte-cmyk.github.io/marmotte-design/marmotte.css">
@@ -118,14 +118,33 @@
     </div>
 
     <div class="field">
-      <label for="z-preis">Einkaufspreis (CHF)</label>
-      <div class="menge-row preis-row">
-        <input type="text" id="z-preis" inputmode="decimal" placeholder="leer = unbekannt">
+      <label>Einkaufspreis</label>
+      <div class="seg seg-wide" id="z-preis-art" style="margin-bottom:8px;">
+        <button type="button" data-art="einheit" class="active">Pro kg / l / Stk</button>
+        <button type="button" data-art="gebinde">Pro Gebinde</button>
+      </div>
+      <div class="menge-row preis-row" id="z-preis-einheit-zeile">
+        <input type="text" id="z-preis" inputmode="decimal" placeholder="CHF, leer = unbekannt">
         <select id="z-preis-einheit">
           <option value="kg">pro kg</option>
           <option value="l">pro l</option>
           <option value="Stk">pro Stk</option>
         </select>
+      </div>
+      <div id="z-gebinde" style="display:none;">
+        <div class="gebinde-row">
+          <input type="text" id="z-geb-name" maxlength="30" placeholder="z.B. Sack">
+          <input type="text" id="z-geb-menge" inputmode="decimal" placeholder="Menge, z.B. 25">
+          <select id="z-geb-einheit">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="l">l</option>
+            <option value="ml">ml</option>
+            <option value="Stk">Stk</option>
+          </select>
+        </div>
+        <input type="text" id="z-geb-preis" inputmode="decimal" placeholder="Preis des Gebindes in CHF, z.B. 31.50" style="margin-top:6px;">
+        <p class="hint-text" id="z-geb-ergebnis" style="margin:6px 0 0;"></p>
       </div>
       <span class="hint-text">Nur für dich als Admin sichtbar.</span>
     </div>
