@@ -465,3 +465,30 @@ body.is-admin .admin-only-block { display: block; }
 .li-kontakt { font-size: 13px; color: var(--m-muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
 .li-kontakt a { color: var(--m-accent-text); text-decoration: none; }
 .ai-preis-kg { font-size: 13px; }
+
+/* ==========================================================================
+   Rezepte
+   ========================================================================== */
+.rz-kopf { grid-template-columns: 1fr 140px; }
+.rz-zeile { display: grid; grid-template-columns: 1fr 80px 64px auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.rz-zeile select, .rz-zeile input { width: 100%; min-width: 0; padding: 8px; font-size: 14px; border-radius: var(--m-radius-sm);
+  border: 1px solid var(--m-border); background: var(--m-surface-2); color: var(--m-text); font-family: inherit; }
+.rz-zeile select:disabled { opacity: .6; }
+.rz-knoepfe { display: flex; gap: 3px; }
+.rz-knoepfe .icon-btn { width: 28px; height: 28px; }
+.rz-knoepfe .icon-btn:disabled { opacity: .35; cursor: default; }
+.rz-schritt { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: start; margin-bottom: 6px; }
+.rz-schritt .rz-nr { padding-top: 9px; font-weight: 600; color: var(--m-muted); font-size: 13.5px; }
+.rz-schritt textarea { width: 100%; padding: 8px; font-size: 14px; border-radius: var(--m-radius-sm); border: 1px solid var(--m-border);
+  background: var(--m-surface-2); color: var(--m-text); font-family: inherit; resize: vertical; }
+.schritt-liste { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+.schritt-liste li { margin-bottom: 6px; }
+.rz-tabelle td:first-child { padding-right: 10px; }
+.tag-teil { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+  background: var(--m-t-orange-bg); color: var(--m-t-orange-fg); vertical-align: 1px; }
+.warn-text { color: var(--m-warning); font-size: 12.5px; margin: 6px 0 0; }
+@media (max-width: 480px) {
+  .rz-kopf { grid-template-columns: 1fr; gap: 0; }
+  .rz-zeile { grid-template-columns: 1fr 64px 58px; }
+  .rz-zeile .rz-knoepfe { grid-column: 1 / -1; justify-content: flex-end; }
+}

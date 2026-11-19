@@ -13,6 +13,8 @@ export function initZutaten(session) {
   let zutaten = [];
   let lieferanten = [];
   let preise = {};
+  let rezepte = [];
+  let rezepteGeladen = false;
   let offen = null;
   let bearbeite = null;
 
@@ -29,6 +31,7 @@ export function initZutaten(session) {
   [sucheEl, liefFilterEl, allFilterEl, inaktivEl].forEach((el) => el.addEventListener("input", render));
 
   // ---------- Hilfen ----------
+  const inRezepten = (id) => rezepte.filter((r) => (r.zeilen || []).some((z) => z.art === "zutat" && z.id === id));
   const liefName = (z) => lieferanten.find((l) => l.id === z.lieferantId)?.name || "";
   const allergenListe = (z, stufe) => ALLERGENE.filter((x) => z.allergene?.[x.key] === stufe);
   const preisText = (id) => (preise[id]?.preis != null ? `${chf(preise[id].preis)} / ${preise[id].einheit}` : "");
@@ -98,6 +101,7 @@ export function initZutaten(session) {
       <div class="detail-grid">
         ${zeile("Lieferant", esc(l?.name || ""))}
         ${zeile("Herkunft", esc(z.herkunft || ""))}
+        ${zeile("Gewicht pro Stück", z.gewichtStk > 0 ? `${String(z.gewichtStk).replace(".", ",")} g` : "")}
         ${isAdmin ? zeile("Einkaufspreis", preisText(z.id) ? `CHF ${preisText(z.id)}${gebindeText(z.id) ? ` <span class="hint-text">(${esc(gebindeText(z.id))})</span>` : ""}` : "–") : ""}
       </div>
       <div class="detail-block">
@@ -114,6 +118,7 @@ export function initZutaten(session) {
         <div class="db-title">Nützliche Hinweise</div>
         <div class="hinweis-liste">${HINWEISE.map((h) => `<span class="hw ${z.hinweise?.[h.key] ? "hw-ja" : ""}">${esc(h.label)}: <strong>${z.hinweise?.[h.key] ? "Ja" : "Nein"}</strong></span>`).join("")}</div>
       </div>
+      ${inRezepten(z.id).length ? `<div class="detail-block"><div class="db-title">Verwendet in Rezepten</div><p class="zutaten-text">${esc(inRezepten(z.id).map((r) => r.name).join(", "))}</p></div>` : ""}
       ${z.updatedBy ? `<p class="hint-text" style="margin:14px 0 0;">Zuletzt bearbeitet von ${esc(z.updatedBy)}${z.updatedAt?.toDate ? ` am ${z.updatedAt.toDate().toLocaleDateString("de-CH")}` : ""}</p>` : ""}`;
     openModal("z-detail-modal");
   }
@@ -137,6 +142,11 @@ export function initZutaten(session) {
     },
     setLieferanten(list) { lieferanten = list; fuelleLieferantFilter(); render(); },
     setPreise(p) { preise = p; render(); },
+    setRezepte(list) {
+      rezepte = list;
+      rezepteGeladen = true;
+      if (offen && f("z-detail-modal").classList.contains("active")) zeigeDetail(zutaten.find((z) => z.id === offen.id));
+    },
   };
   if (!isAdmin) return api;
 
@@ -235,6 +245,7 @@ export function initZutaten(session) {
         .map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("");
     f("z-lieferant").value = z?.lieferantId || "";
     f("z-herkunft").value = z?.herkunft || "";
+    f("z-gewicht-stk").value = z?.gewichtStk > 0 ? String(z.gewichtStk).replace(".", ",") : "";
     f("z-preis").value = z ? toInput(preise[z.id]?.preis) : "";
     f("z-preis-einheit").value = (z && preise[z.id]?.einheit) || "kg";
     const g = z ? preise[z.id]?.gebinde : null;
@@ -264,6 +275,9 @@ export function initZutaten(session) {
     if (zutaten.some((z) => z.name.toLowerCase() === name.toLowerCase() && z.id !== bearbeite?.id)) {
       err.textContent = "Es gibt bereits eine Zutat mit diesem Namen."; return;
     }
+    const gstTxt = f("z-gewicht-stk").value.trim().replace(",", ".");
+    const gewichtStk = gstTxt === "" ? null : Number(gstTxt);
+    if (gewichtStk !== null && !(gewichtStk > 0)) { err.textContent = "«Gewicht pro Stück» muss eine Zahl grösser als 0 sein."; return; }
     let preis, einheit, gebinde = null;
     if (preisArt === "gebinde") {
       const r = gebindeLesen();
@@ -287,6 +301,7 @@ export function initZutaten(session) {
       deklaration: f("z-deklaration").value.trim(),
       lieferantId: f("z-lieferant").value,
       herkunft: f("z-herkunft").value.trim(),
+      gewichtStk,
       allergene,
       hinweise,
       updatedAt: serverTimestamp(),
@@ -330,6 +345,12 @@ export function initZutaten(session) {
 
   f("z-edit-delete").addEventListener("click", async () => {
     if (!bearbeite) return;
+    if (!rezepteGeladen) { toast("Rezepte werden noch geladen – bitte kurz warten."); return; }
+    const verwendet = inRezepten(bearbeite.id);
+    if (verwendet.length) {
+      alert(`«${bearbeite.name}» kann nicht gelöscht werden, weil sie in ${verwendet.length === 1 ? "einem Rezept" : `${verwendet.length} Rezepten`} vorkommt:\n${verwendet.map((r) => r.name).join(", ")}\n\nDu kannst sie stattdessen deaktivieren.`);
+      return;
+    }
     if (!confirm(`«${bearbeite.name}» endgültig löschen? Das kann nicht rückgängig gemacht werden.\n\nTipp: «Deaktivieren» blendet die Zutat nur aus.`)) return;
     try {
       await deleteDoc(doc(db, "zutaten", bearbeite.id));

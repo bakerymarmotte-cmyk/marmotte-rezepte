@@ -38,15 +38,32 @@
 
 <div class="nav-wrap" id="nav-wrap">
 <nav class="main-nav" id="main-nav">
-  <button data-tab="zutaten" class="active"><span class="icon"><i data-icon="package"></i></span>Zutaten</button>
+  <button data-tab="rezepte" class="active"><span class="icon"><i data-icon="chef-hat"></i></span>Rezepte</button>
+  <button data-tab="zutaten"><span class="icon"><i data-icon="package"></i></span>Zutaten</button>
   <button data-tab="lieferanten"><span class="icon"><i data-icon="shopping-cart"></i></span>Lieferanten</button>
 </nav>
 </div>
 
 <main>
 
+  <!-- REZEPTE -->
+  <section class="tab-panel active" id="panel-rezepte">
+    <div class="search-box">
+      <i data-icon="search" data-size="16"></i>
+      <input type="search" id="r-suche" placeholder="Rezept suchen …" autocomplete="off">
+    </div>
+    <div class="list-head">
+      <span class="hint-text" id="r-anzahl"></span>
+      <div class="list-checks">
+        <label class="check-inline admin-only"><input type="checkbox" id="r-inaktive"> Inaktive zeigen</label>
+      </div>
+    </div>
+    <button class="btn btn-primary admin-only add-btn-wide" id="r-neu" type="button"><i data-icon="plus" data-size="16"></i> Neues Rezept</button>
+    <div id="r-list"><p class="hint-text">Lädt …</p></div>
+  </section>
+
   <!-- ZUTATEN -->
-  <section class="tab-panel active" id="panel-zutaten">
+  <section class="tab-panel" id="panel-zutaten">
     <div class="search-box">
       <i data-icon="search" data-size="16"></i>
       <input type="search" id="z-suche" placeholder="Zutat suchen …" autocomplete="off">
@@ -109,6 +126,11 @@
       <textarea id="z-deklaration" rows="2" maxlength="1000" placeholder="leer = gleich wie Name. z.B. Schokolade (Zucker, Kakaomasse, Kakaobutter, Emulgator: Sojalecithin)"></textarea>
     </div>
 
+    <div class="field">
+      <label for="z-gewicht-stk">Gewicht pro Stück (g)</label>
+      <input type="text" id="z-gewicht-stk" inputmode="decimal" placeholder="nur nötig, wenn die Zutat in Rezepten in Stk vorkommt, z.B. Ei = 50">
+    </div>
+
     <div class="form-row-2">
       <div class="field">
         <label for="z-lieferant">Lieferant</label>
@@ -166,6 +188,55 @@
     <div class="edit-extra" id="z-edit-extra">
       <button class="btn btn-secondary btn-small" id="z-edit-toggle" type="button"></button>
       <button class="btn btn-danger btn-small" id="z-edit-delete" type="button"><i data-icon="trash-2" data-size="14"></i> Löschen</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Rezept ansehen -->
+<div class="modal-backdrop" id="r-detail-modal">
+  <div class="modal-sheet modal-wide">
+    <div id="r-detail-body"></div>
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="btn btn-secondary" id="r-detail-close" type="button">Schliessen</button>
+      <button class="btn btn-primary admin-only" id="r-detail-edit" type="button"><i data-icon="pencil" data-size="16"></i> Bearbeiten</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Rezept bearbeiten (Admin) -->
+<div class="modal-backdrop" id="r-edit-modal">
+  <div class="modal-sheet modal-wide">
+    <h3 id="r-edit-title">Neues Rezept</h3>
+    <div class="nr-name-row rz-kopf">
+      <div class="field"><label for="r-name">Name *</label><input type="text" id="r-name" maxlength="80" placeholder="z.B. Gipfeliteig"></div>
+      <div class="field"><label for="r-teiggewicht">Teiggewicht (g) *</label><input type="text" id="r-teiggewicht" inputmode="decimal" placeholder="z.B. 2400"></div>
+    </div>
+
+    <div class="field">
+      <label>Zutaten und Teilrezepte</label>
+      <div id="r-zeilen"></div>
+      <p class="hint-text" id="r-summe" style="margin:4px 0 8px;"></p>
+      <button class="btn btn-secondary btn-small" id="r-zeile-neu" type="button"><i data-icon="plus" data-size="14"></i> Zeile</button>
+      <span class="hint-text" style="display:block; margin-top:6px;">Teilrezepte werden in Gramm angegeben. Das Teiggewicht ist das Gewicht nach der Herstellung und wird gebraucht, wenn das Rezept als Teilrezept dient.</span>
+    </div>
+
+    <div class="field">
+      <label>Arbeitsschritte</label>
+      <div id="r-schritte"></div>
+      <button class="btn btn-secondary btn-small" id="r-schritt-neu" type="button"><i data-icon="plus" data-size="14"></i> Schritt</button>
+    </div>
+
+    <div class="field"><label for="r-notiz">Bemerkung</label><textarea id="r-notiz" rows="2" maxlength="1000"></textarea></div>
+
+    <div class="error-text" id="r-edit-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="r-edit-cancel" type="button">Abbrechen</button>
+      <button class="btn btn-primary" id="r-edit-save" type="button"><i data-icon="save" data-size="16"></i> Speichern</button>
+    </div>
+    <div class="edit-extra" id="r-edit-extra">
+      <button class="btn btn-secondary btn-small" id="r-edit-duplizieren" type="button">Duplizieren</button>
+      <button class="btn btn-secondary btn-small" id="r-edit-toggle" type="button"></button>
+      <button class="btn btn-danger btn-small" id="r-edit-delete" type="button"><i data-icon="trash-2" data-size="14"></i> Löschen</button>
     </div>
   </div>
 </div>

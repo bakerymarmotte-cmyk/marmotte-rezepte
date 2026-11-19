@@ -2,6 +2,8 @@ import { requireSession, logout } from "./session.js";
 import { db } from "./firebase-config.js";
 import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { initZutaten } from "./zutaten.js";
+import { initRezepte } from "./rezepte.js";
+import { artikelAbgleich } from "./rezeptberechnung.js";
 import { initLieferanten } from "./lieferanten.js";
 import { toast } from "./ui.js";
 
@@ -32,6 +34,11 @@ async function start() {
 
   const zutaten = initZutaten(session);
   const lieferanten = initLieferanten(session);
+  const rezepte = initRezepte(session);
+
+  // Für den Abgleich der Artikel (Zutatenliste/Allergene aus dem Rezept)
+  const daten = { rezepte: null, zutaten: null, artikel: null };
+  const abgleich = artikelAbgleich(daten, isAdmin, profile.name || "");
 
   // Lieferanten live laden (für die Liste und die Auswahl bei den Zutaten)
   onSnapshot(
@@ -51,8 +58,33 @@ async function start() {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       zutaten.setZutaten(list);
       lieferanten.setZutaten(list);
+      rezepte.setZutaten(list);
+      daten.zutaten = list; abgleich();
     },
     (err) => { console.error(err); toast("Zutaten konnten nicht geladen werden."); }
+  );
+
+  // Rezepte live laden
+  onSnapshot(
+    query(collection(db, "rezepte"), orderBy("name")),
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      rezepte.setRezepte(list);
+      zutaten.setRezepte(list);
+      daten.rezepte = list; abgleich();
+    },
+    (err) => { console.error(err); toast("Rezepte konnten nicht geladen werden."); }
+  );
+
+  // Artikel (für «Verwendet in» und den Abgleich)
+  onSnapshot(
+    collection(db, "artikel"),
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      rezepte.setArtikel(list);
+      daten.artikel = list; abgleich();
+    },
+    (err) => { console.error(err); }
   );
 
   // Einkaufspreise liegen getrennt und sind nur für den Admin lesbar
