@@ -492,3 +492,30 @@ body.is-admin .admin-only-block { display: block; }
   .rz-zeile { grid-template-columns: 1fr 64px 58px; }
   .rz-zeile .rz-knoepfe { grid-column: 1 / -1; justify-content: flex-end; }
 }
+
+/* ==========================================================================
+   Zutaten nach Kategorie (eingeklappte Gruppen) + Kategorien verwalten
+   ========================================================================== */
+.z-knoepfe { gap: 8px; }
+.kat-gruppe { margin-bottom: 8px; }
+.kat-gruppe > summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border: 1px solid var(--m-border); border-radius: var(--m-radius-md);
+  background: var(--m-card); font-weight: 600; font-size: 14.5px;
+}
+.kat-gruppe > summary::-webkit-details-marker { display: none; }
+.kat-gruppe > summary::before { content: "▸"; color: var(--m-muted); width: 12px; transition: transform .15s; }
+.kat-gruppe[open] > summary::before { transform: rotate(90deg); }
+.kat-gruppe[open] > summary { margin-bottom: 8px; border-color: var(--m-accent); }
+.kg-name { flex: 1; }
+.kg-anzahl { font-size: 12px; font-weight: 600; color: var(--m-muted); background: var(--m-surface-2);
+  border: 1px solid var(--m-border); border-radius: 999px; padding: 1px 9px; }
+.kat-gruppe .art-item { margin-left: 12px; width: calc(100% - 12px); }
+.kat-zeile { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.kat-zeile input, .kat-neu input {
+  width: 100%; min-width: 0; padding: 9px 10px; font-size: 15px; border-radius: var(--m-radius-sm);
+  border: 1px solid var(--m-border); background: var(--m-surface-2); color: var(--m-text); font-family: inherit;
+}
+.kat-anzahl { min-width: 20px; text-align: right; }
+.kat-neu { display: flex; gap: 8px; margin-top: 12px; }
+.kat-neu .btn { white-space: nowrap; }

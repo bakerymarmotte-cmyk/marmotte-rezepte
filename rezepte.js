@@ -6,6 +6,7 @@ import { esc } from "./geld.js";
 import { ALLERGENE, HINWEISE } from "./stammdaten.js";
 import { deklaration, REZEPT_EINHEITEN } from "./rezeptberechnung.js";
 import { toast, openModal, closeModal } from "./ui.js";
+import { nachKategorie } from "./kategorien.js";
 
 // Rezepte: Liste und Detail für Admin und Backstube, Bearbeiten nur für den Admin.
 // Ein Rezept: { name, teiggewicht (g), zeilen: [{ art: "zutat"|"rezept", id, menge, einheit }], schritte: [Text], notiz }
@@ -15,6 +16,7 @@ export function initRezepte(session) {
   let rezepte = [];
   let zutaten = [];
   let artikel = [];
+  let kategorien = [];
   let offen = null;
   let bearbeite = null;
 
@@ -144,6 +146,7 @@ export function initRezepte(session) {
     setRezepte(list) { rezepte = list; nachDaten(); },
     setZutaten(list) { zutaten = list; nachDaten(); },
     setArtikel(list) { artikel = list; nachDaten(); },
+    setKategorien(list) { kategorien = list; },
   };
   if (!isAdmin) return api;
 
@@ -166,7 +169,7 @@ export function initRezepte(session) {
       (!bearbeite || !enthaelt(x.id, bearbeite.id)));
     return `<select class="rz-wahl">
       <option value="">Bitte wählen</option>
-      <optgroup label="Zutaten">${zut.map((x) => `<option value="zutat:${x.id}" ${wert === `zutat:${x.id}` ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>
+      ${nachKategorie([...zut].sort((a, b) => a.name.localeCompare(b.name, "de")), kategorien).map((g) => `<optgroup label="${esc(g.name)}">${g.zutaten.map((x) => `<option value="zutat:${x.id}" ${wert === `zutat:${x.id}` ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>`).join("")}
       ${rez.length ? `<optgroup label="Teilrezepte">${rez.map((x) => `<option value="rezept:${x.id}" ${wert === `rezept:${x.id}` ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</optgroup>` : ""}
     </select>`;
   }

@@ -3,6 +3,7 @@ import { db } from "./firebase-config.js";
 import { collection, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { initZutaten } from "./zutaten.js";
 import { initRezepte } from "./rezepte.js";
+import { initKategorien } from "./kategorien.js";
 import { artikelAbgleich } from "./rezeptberechnung.js";
 import { initLieferanten } from "./lieferanten.js";
 import { toast } from "./ui.js";
@@ -35,6 +36,19 @@ async function start() {
   const zutaten = initZutaten(session);
   const lieferanten = initLieferanten(session);
   const rezepte = initRezepte(session);
+  const kategorien = initKategorien(session);
+
+  // Kategorien der Zutaten live laden
+  onSnapshot(
+    collection(db, "zutatKategorien"),
+    (snap) => {
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      kategorien.setKategorien(list);
+      zutaten.setKategorien(list);
+      rezepte.setKategorien(list);
+    },
+    (err) => { console.error(err); toast("Kategorien konnten nicht geladen werden."); }
+  );
 
   // Für den Abgleich der Artikel (Zutatenliste/Allergene aus dem Rezept)
   const daten = { rezepte: null, zutaten: null, artikel: null };
@@ -59,6 +73,7 @@ async function start() {
       zutaten.setZutaten(list);
       lieferanten.setZutaten(list);
       rezepte.setZutaten(list);
+      kategorien.setZutaten(list);
       daten.zutaten = list; abgleich();
     },
     (err) => { console.error(err); toast("Zutaten konnten nicht geladen werden."); }

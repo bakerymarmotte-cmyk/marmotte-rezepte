@@ -78,7 +78,10 @@
         <label class="check-inline admin-only"><input type="checkbox" id="z-inaktive"> Inaktive zeigen</label>
       </div>
     </div>
-    <button class="btn btn-primary admin-only add-btn-wide" id="z-neu" type="button"><i data-icon="plus" data-size="16"></i> Neue Zutat</button>
+    <div class="btn-row admin-only add-btn-wide z-knoepfe">
+      <button class="btn btn-secondary" id="z-kategorien-btn" type="button"><i data-icon="tag" data-size="16"></i> Kategorien</button>
+      <button class="btn btn-primary" id="z-neu" type="button"><i data-icon="plus" data-size="16"></i> Neue Zutat</button>
+    </div>
     <div id="z-list"><p class="hint-text">Lädt …</p></div>
   </section>
 
@@ -129,6 +132,11 @@
     <div class="field">
       <label for="z-gewicht-stk">Gewicht pro Stück (g)</label>
       <input type="text" id="z-gewicht-stk" inputmode="decimal" placeholder="nur nötig, wenn die Zutat in Rezepten in Stk vorkommt, z.B. Ei = 50">
+    </div>
+
+    <div class="field">
+      <label for="z-kategorie">Kategorie</label>
+      <select id="z-kategorie"></select>
     </div>
 
     <div class="form-row-2">
@@ -238,6 +246,20 @@
       <button class="btn btn-secondary btn-small" id="r-edit-toggle" type="button"></button>
       <button class="btn btn-danger btn-small" id="r-edit-delete" type="button"><i data-icon="trash-2" data-size="14"></i> Löschen</button>
     </div>
+  </div>
+</div>
+
+<!-- Modal: Kategorien der Zutaten (Admin) -->
+<div class="modal-backdrop" id="kat-modal">
+  <div class="modal-sheet">
+    <h3>Kategorien der Zutaten</h3>
+    <p class="hint-text" style="margin-top:-8px;">Name direkt ändern, mit den Pfeilen sortieren. Löschen geht nur, wenn keine Zutat mehr darin ist. Die Zahl zeigt die Anzahl Zutaten.</p>
+    <div id="kat-liste"></div>
+    <div class="kat-neu">
+      <input type="text" id="kat-neu-name" maxlength="40" placeholder="Neue Kategorie, z.B. Alkohol">
+      <button class="btn btn-primary btn-small" id="kat-neu-btn" type="button">Hinzufügen</button>
+    </div>
+    <button class="btn btn-secondary" id="kat-close" type="button" style="width:100%; margin-top:14px;">Schliessen</button>
   </div>
 </div>
 

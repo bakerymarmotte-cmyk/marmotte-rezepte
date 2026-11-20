@@ -5,6 +5,7 @@ import {
 import { chf, parseChf, toInput, esc } from "./geld.js";
 import { ALLERGENE, HINWEISE } from "./stammdaten.js";
 import { toast, openModal, closeModal } from "./ui.js";
+import { nachKategorie, sortiereKategorien } from "./kategorien.js";
 
 // Zutaten: Liste, Detail und (für den Admin) Bearbeiten.
 // Der Einkaufspreis liegt getrennt in «zutatenPreise/<zutatId>», damit die Backstube ihn nicht lesen kann.
@@ -15,6 +16,8 @@ export function initZutaten(session) {
   let preise = {};
   let rezepte = [];
   let rezepteGeladen = false;
+  let kategorien = [];
+  const offeneGruppen = new Set(); // aufgeklappte Kategorien (nur für diese Sitzung)
   let offen = null;
   let bearbeite = null;
 
@@ -54,27 +57,41 @@ export function initZutaten(session) {
     );
   }
 
+  const filterAktiv = () => !!(sucheEl.value.trim() || liefFilterEl.value || allFilterEl.value);
+
   function render() {
     const rows = gefiltert().sort((a, b) => (a.active === false) - (b.active === false) || a.name.localeCompare(b.name, "de"));
     f("z-anzahl").textContent = `${rows.length} ${rows.length === 1 ? "Zutat" : "Zutaten"}`;
     if (!zutaten.length) { listEl.innerHTML = '<p class="hint-text">Noch keine Zutaten erfasst.</p>'; return; }
     if (!rows.length) { listEl.innerHTML = '<p class="hint-text">Keine Zutaten gefunden.</p>'; return; }
-    listEl.innerHTML = rows.map((z) => {
-      const sub = [liefName(z), z.herkunft].filter(Boolean).join(" · ");
-      const enth = allergenListe(z, "enthalten").map((x) => x.kurz);
-      const spur = allergenListe(z, "spuren").map((x) => x.kurz);
-      const hw = HINWEISE.filter((h) => z.hinweise?.[h.key]).map((h) => h.label);
-      return `
-      <button class="art-item ${z.active === false ? "is-inactive" : ""}" data-id="${z.id}" type="button">
-        <div class="ai-main">
-          <div class="ai-name">${esc(z.name)}${hw.map((h) => ` <span class="tag-saison">${esc(h)}</span>`).join("")}${z.active === false ? ' <span class="tag-aus">inaktiv</span>' : ""}</div>
-          ${sub ? `<div class="ai-sub">${esc(sub)}</div>` : ""}
-          ${enth.length ? `<div class="ai-allerg">${esc(enth.join(" · "))}</div>` : ""}
-          ${spur.length ? `<div class="ai-sub">Spuren: ${esc(spur.join(", "))}</div>` : ""}
-        </div>
-        ${isAdmin && preisText(z.id) ? `<div class="ai-preise"><span class="mono ai-preis-kg">${preisText(z.id)}</span></div>` : ""}
-      </button>`;
-    }).join("");
+    // Nach Kategorie gruppiert und eingeklappt; bei Suche/Filter alles offen
+    const offen = filterAktiv();
+    listEl.innerHTML = nachKategorie(rows, kategorien).map((g) => `
+      <details class="kat-gruppe" data-kat="${g.id}" ${offen || offeneGruppen.has(g.id) ? "open" : ""}>
+        <summary><span class="kg-name">${esc(g.name)}</span><span class="kg-anzahl">${g.zutaten.length}</span></summary>
+        ${g.zutaten.map(zeileHtml).join("")}
+      </details>`).join("");
+  }
+  listEl.addEventListener("toggle", (e) => {
+    if (!e.target.matches?.("details.kat-gruppe") || filterAktiv()) return;
+    if (e.target.open) offeneGruppen.add(e.target.dataset.kat); else offeneGruppen.delete(e.target.dataset.kat);
+  }, true);
+
+  function zeileHtml(z) {
+    const sub = [liefName(z), z.herkunft].filter(Boolean).join(" · ");
+    const enth = allergenListe(z, "enthalten").map((x) => x.kurz);
+    const spur = allergenListe(z, "spuren").map((x) => x.kurz);
+    const hw = HINWEISE.filter((h) => z.hinweise?.[h.key]).map((h) => h.label);
+    return `
+    <button class="art-item ${z.active === false ? "is-inactive" : ""}" data-id="${z.id}" type="button">
+      <div class="ai-main">
+        <div class="ai-name">${esc(z.name)}${hw.map((h) => ` <span class="tag-saison">${esc(h)}</span>`).join("")}${z.active === false ? ' <span class="tag-aus">inaktiv</span>' : ""}</div>
+        ${sub ? `<div class="ai-sub">${esc(sub)}</div>` : ""}
+        ${enth.length ? `<div class="ai-allerg">${esc(enth.join(" · "))}</div>` : ""}
+        ${spur.length ? `<div class="ai-sub">Spuren: ${esc(spur.join(", "))}</div>` : ""}
+      </div>
+      ${isAdmin && preisText(z.id) ? `<div class="ai-preise"><span class="mono ai-preis-kg">${preisText(z.id)}</span></div>` : ""}
+    </button>`;
   }
 
   listEl.addEventListener("click", (e) => {
@@ -99,6 +116,7 @@ export function initZutaten(session) {
         </div>
       </div>
       <div class="detail-grid">
+        ${zeile("Kategorie", esc(kategorien.find((k) => k.id === z.kategorieId)?.name || ""))}
         ${zeile("Lieferant", esc(l?.name || ""))}
         ${zeile("Herkunft", esc(z.herkunft || ""))}
         ${zeile("Gewicht pro Stück", z.gewichtStk > 0 ? `${String(z.gewichtStk).replace(".", ",")} g` : "")}
@@ -142,6 +160,7 @@ export function initZutaten(session) {
     },
     setLieferanten(list) { lieferanten = list; fuelleLieferantFilter(); render(); },
     setPreise(p) { preise = p; render(); },
+    setKategorien(list) { kategorien = sortiereKategorien(list); render(); },
     setRezepte(list) {
       rezepte = list;
       rezepteGeladen = true;
@@ -240,6 +259,9 @@ export function initZutaten(session) {
     f("z-edit-error").textContent = "";
     f("z-name").value = z?.name || "";
     f("z-deklaration").value = z?.deklaration || "";
+    f("z-kategorie").innerHTML = '<option value="">– ohne Kategorie –</option>' +
+      kategorien.map((k) => `<option value="${k.id}">${esc(k.name)}</option>`).join("");
+    f("z-kategorie").value = kategorien.some((k) => k.id === z?.kategorieId) ? z.kategorieId : "";
     f("z-lieferant").innerHTML = '<option value="">– kein Lieferant –</option>' +
       lieferanten.filter((l) => l.active !== false || l.id === z?.lieferantId)
         .map((l) => `<option value="${l.id}">${esc(l.name)}</option>`).join("");
@@ -299,6 +321,7 @@ export function initZutaten(session) {
     const daten = {
       name,
       deklaration: f("z-deklaration").value.trim(),
+      kategorieId: f("z-kategorie").value,
       lieferantId: f("z-lieferant").value,
       herkunft: f("z-herkunft").value.trim(),
       gewichtStk,
